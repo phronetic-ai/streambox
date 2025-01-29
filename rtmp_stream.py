@@ -1,4 +1,5 @@
 import sys
+from pathlib import Path
 import argparse
 import subprocess
 import requests
@@ -18,7 +19,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-FRAME_RATE = 30
+FRAME_RATE = 24
 RETRY_DELAY = 5
 global SERVER_ALIVE_INTERVAL
 SERVER_ALIVE_INTERVAL = 10
@@ -162,15 +163,16 @@ def start_ffmpeg_stream(rtmp_url, webroomId):
 
 def main():
     parser = argparse.ArgumentParser(description='Robust Webcam streaming script.')
-    parser.add_argument('webroomId', nargs='?', help='Webroom ID in the format webroomId=<webroomId>')
+    # parser.add_argument('webroomId', nargs='?', help='Webroom ID in the format webroomId=<webroomId>')
     parser.add_argument('--server', choices=['local', 'remote'], default='remote', help='Server to connect to: local or remote (default: remote)')
     args = parser.parse_args()
 
     if args.server == 'remote':
-        if not args.webroomId or not args.webroomId.startswith('webroomId='):
-            print("Usage: python script_name.py webroomId=<webroomId> [--server local|remote]")
-            sys.exit(1)
-        webroomId = args.webroomId.split('=', 1)[1]
+        home_dir = Path.home()
+        webroom_id_file = home_dir / '.webroom_id'
+        if os.path.exists(webroom_id_file):
+            with open(webroom_id_file, 'r') as f:
+                webroomId = f.read().strip()
         if not webroomId:
             print("Error: webroomId cannot be empty.")
             sys.exit(1)
