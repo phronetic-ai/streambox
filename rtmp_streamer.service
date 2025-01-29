@@ -1,0 +1,19 @@
+[Unit]
+Description=RTMP Streamer Service
+After=network-online.target
+Requires=network-online.target
+
+[Service]
+Type=simple
+#ExecStart=/home/vishrut/.pyenv/shims/python /home/vishrut/cctv/rtmp_stream.py webroomId=66ed487947aab496c99aaa72 --server remote
+ExecStart=/home/vishrut/.pyenv/shims/python /home/vishrut/cctv/rtmp_stream.py webroomId=6735f478580effb8ac9231a1 --server remote
+WorkingDirectory=/home/vishrut/cctv
+StandardOutput=journal
+StandardError=journal
+Restart=always
+RestartSec=120
+User=vishrut
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
