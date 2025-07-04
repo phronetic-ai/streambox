@@ -1,0 +1,37 @@
+docker run --rm -it --platform linux/arm/v7 raspbian/stretch bash
+
+ffmpeg -re -stream_loop -1 -i /runtime/theia/assets/videos/faces/dhoni.mp4 -c copy -bufsize 100m -f rtsp rtsp://localhost:8554/stream1
+
+
+ffmpeg -re \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream1 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream2 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream3 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream4 \
+-filter_complex "
+[0:v]scale=960:540[v1];
+[1:v]scale=960:540[v2];
+[2:v]scale=960:540[v3];
+[3:v]scale=960:540[v4];
+[v1][v2][v3][v4]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[out]
+" \
+-map "[out]" -r 15 -pix_fmt yuv420p -preset ultrafast -vsync 2 \
+-b:v 2M -maxrate 2M -bufsize 4M \
+-vcodec libx264 -tune zerolatency -f rtsp rtsp://localhost:8554/stream5
+
+
+ffmpeg -re \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream1 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream2 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream3 \
+-thread_queue_size 512 -i rtsp://localhost:8554/stream4 \
+-filter_complex "
+[0:v]scale=960:540[v1];
+[1:v]scale=960:540[v2];
+[2:v]scale=960:540[v3];
+[3:v]scale=960:540[v4];
+[v1][v2][v3][v4]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[out]
+" \
+-map "[out]" -r 15 -pix_fmt yuv420p -preset p1 -vsync 2 \
+-b:v 2M -maxrate 2M -bufsize 4M \
+-vcodec h264_nvenc -rc cbr -profile high -g 30 -bf 0 -f rtsp rtsp://localhost:8554/stream5
