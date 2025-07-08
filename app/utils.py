@@ -1,9 +1,24 @@
-import platform
-import socket
+import os
+import uuid
 import psutil
+import socket
+from functools import cache
 
-def get_mac_address():
-    return platform.node()
+
+@cache
+def get_device_id():
+    serial_path = "/sys/firmware/devicetree/base/serial-number"
+    if os.path.exists(serial_path):
+        file_path = serial_path
+    else:
+        file_path = os.path.expanduser("~/device-id")
+        if not os.path.exists(file_path):
+            new_id = str(uuid.uuid4())
+            with open(file_path, "w") as f:
+                f.write(new_id)
+            return new_id
+    with open(file_path, "r") as f:
+        return f.read().strip().strip('\x00')
 
 def check_network_availability():
     try:
