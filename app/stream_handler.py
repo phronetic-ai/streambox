@@ -1,16 +1,35 @@
 import subprocess
+import time
+
 from app.gateway import GatewayService
 from app.logs import logger
 
+
 class StreamHandler:
     def __init__(self, gateway: GatewayService, stream_details: dict):
-        self.id = stream_details["stream_id"]
+        self.id: str = stream_details["stream_id"]
+        self.stream_url: str = stream_details["stream_url"]
+        self.status: str = stream_details["status"]
+        self.source_urls: list[str] = stream_details["source_urls"]
+        self.gateway: GatewayService = gateway
+        self.ffmpeg_process: subprocess.Popen | None = None
+        self.exit_code: int = 0
+        self.last_frame_timestamp: float | None = stream_details["last_frame_timestamp"]
+        self.start_timestamp: float | None = None
+
+    def update(self, stream_details: dict):
+        if (
+            self.stream_url == stream_details["stream_url"]
+            and self.status == stream_details["status"]
+            and self.source_urls == stream_details["source_urls"]
+        ):
+            return
+
         self.stream_url = stream_details["stream_url"]
         self.status = stream_details["status"]
         self.source_urls = stream_details["source_urls"]
-        self.gateway = gateway
-        self.ffmpeg_process = None
-        self.exit_code = 0
+        self.last_frame_timestamp = stream_details["last_frame_timestamp"]
+        self.restart()
 
     def start(self):
         if self.gateway.stop_event.is_set():
@@ -22,8 +41,9 @@ class StreamHandler:
             self.build_ffmpeg_cmd(),
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
-            text=True
+            text=True,
         )
+        self.start_timestamp = time.time()
 
     def stop(self):
         if self.ffmpeg_process:
@@ -40,8 +60,15 @@ class StreamHandler:
 
     def is_alive(self):
         if self.ffmpeg_process:
-            return self.ffmpeg_process.poll() is None
-        return False
+            if self.ffmpeg_process.poll() is not None:
+                return False
+        if self.start_timestamp and time.time() - self.start_timestamp > 150:
+            if (
+                not self.last_frame_timestamp
+                or time.time() - self.last_frame_timestamp > 10
+            ):
+                return False
+        return True
 
     def build_ffmpeg_cmd(self):
         logger.info(f"Building ffmpeg command for stream: {self.id}")
@@ -51,9 +78,17 @@ class StreamHandler:
         if url_count == 1:
             # For single URL, just relay the stream as is
             ffmpeg_cmd = [
-                "ffmpeg", "-re",
-                "-thread_queue_size", "512", "-i", source_urls[0],
-                "-c:v", "copy", "-f", "rtsp", self.stream_url
+                "ffmpeg",
+                "-re",
+                "-thread_queue_size",
+                "512",
+                "-i",
+                source_urls[0],
+                "-c:v",
+                "copy",
+                "-f",
+                "rtsp",
+                self.stream_url,
             ]
         else:
             # For 2-4 URLs, create a 2x2 grid
@@ -76,11 +111,34 @@ class StreamHandler:
                 "[v1][v2][v3][v4]xstack=inputs=4:layout=0_0|w0_0|0_h0|w0_h0[out]"
             )
 
-            ffmpeg_cmd.extend([
-                "-filter_complex", filter_complex,
-                "-map", "[out]", "-r", "15", "-pix_fmt", "yuv420p", "-preset", "ultrafast", "-vsync", "2",
-                "-b:v", "2M", "-maxrate", "2M", "-bufsize", "4M",
-                "-vcodec", "libx264", "-tune", "zerolatency", "-f", "rtsp", self.stream_url
-            ])
+            ffmpeg_cmd.extend(
+                [
+                    "-filter_complex",
+                    filter_complex,
+                    "-map",
+                    "[out]",
+                    "-r",
+                    "15",
+                    "-pix_fmt",
+                    "yuv420p",
+                    "-preset",
+                    "ultrafast",
+                    "-vsync",
+                    "2",
+                    "-b:v",
+                    "2M",
+                    "-maxrate",
+                    "2M",
+                    "-bufsize",
+                    "4M",
+                    "-vcodec",
+                    "libx264",
+                    "-tune",
+                    "zerolatency",
+                    "-f",
+                    "rtsp",
+                    self.stream_url,
+                ]
+            )
 
         return ffmpeg_cmd
