@@ -59,6 +59,9 @@ if [ -f "setup.py" ]; then
   uv run python setup.py
 fi
 
+# install ffmpeg
+sudo apt install -y ffmpeg
+
 # 6. Create systemd service
 if [ ! -f "$SERVICE_PATH" ]; then
   echo "🛠️ Creating systemd service..."
@@ -87,3 +90,13 @@ systemctl --user daemon-reexec
 systemctl --user daemon-reload
 systemctl --user enable "$SERVICE_NAME"
 systemctl --user start "$SERVICE_NAME"
+
+# 7. Install update monitor
+echo "🔄 Setting up automatic updates..."
+if [ -f "$CODE_DIR/scripts/install_updates_monitor.sh" ]; then
+  chmod +x "$CODE_DIR/scripts/install_updates_monitor.sh"
+  "$CODE_DIR/scripts/install_updates_monitor.sh" "$CODE_DIR"
+  echo "🔄 Update monitor installed"
+else
+  echo "⚠️ Update monitor script not found. Skipping."
+fi
