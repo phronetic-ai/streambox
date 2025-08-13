@@ -59,10 +59,19 @@ if [ -f "setup.py" ]; then
   uv run python setup.py
 fi
 
-# install ffmpeg
-sudo apt install -y ffmpeg
+# 6. Install ffmpeg
+if ! command -v ffmpeg >/dev/null; then
+  echo "🎥 Installing FFmpeg..."
+  sudo apt install -y ffmpeg
+fi
 
-# 6. Create systemd service
+# 7. Install speedtest-cli if not already present
+if ! command -v speedtest &> /dev/null; then
+    echo "Installing speedtest-cli..."
+    bash "$CODE_DIR/scripts/install_speedtest.sh"
+fi
+
+# 8. Create systemd service
 if [ ! -f "$SERVICE_PATH" ]; then
   echo "🛠️ Creating systemd service..."
   mkdir -p "$HOME/.config/systemd/user"

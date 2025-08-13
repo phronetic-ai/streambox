@@ -8,4 +8,5 @@ dependencies = [
     "httpx>=0.28.1",
     "psutil>=7.0.0",
     "requests>=2.32.4",
+    "speedtest-cli>=2.1.3",
 ]

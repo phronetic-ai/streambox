@@ -3,7 +3,7 @@ import uuid
 import psutil
 import socket
 from functools import cache
-
+from .network_utils import get_upload_bitrate, get_cached_network_speedtest
 
 @cache
 def get_device_id():
@@ -42,4 +42,20 @@ def get_system_info():
         "cpu_usage": get_cpu_usage(),
         "memory_usage": get_memory_usage(),
         "disk_usage": get_disk_usage(),
+        "network_info": get_network_info(),
     }
+
+def get_network_info():
+    upload_bitrate = get_upload_bitrate(2)
+    network_speed = get_cached_network_speedtest()
+    upload_speed = network_speed["upload_mbps"] if network_speed else 0
+    download_speed = network_speed["download_mbps"] if network_speed else 0
+    return {
+        "upload_speed": upload_speed,
+        "download_speed": download_speed,
+        "upload_bitrate": upload_bitrate,
+    }
+
+if __name__ == "__main__":
+    print(f"Network info: {get_network_info()}")
+    print(f"System info: {get_system_info()}")
