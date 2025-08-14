@@ -8,21 +8,40 @@ import json
 
 REPO_ROOT = os.path.expanduser("~/code/phronetics/streambox")
 
+def get_active_interfaces():
+    # Virtual / loopback prefixes
+    skip_prefixes = ("lo", "docker", "br-", "veth", "virbr", "tun", "tap")
+    active_interfaces = []
+    for name, stats in psutil.net_if_stats().items():
+        if not stats.isup:
+            continue  # skip down interfaces
+        if name.startswith(skip_prefixes):
+            continue  # skip virtual/loopback
+        # if stats.speed == 0 and not re.match(r"(eth|enp|wlan|wlp|wwan)", name):
+        #     continue  # skip if no speed and doesn't look like a real NIC
+        active_interfaces.append(name)
+    return active_interfaces
+
+def get_current_bytes_sent(interfaces: list[str]):
+    counters = psutil.net_io_counters(pernic=True)
+    return sum(
+        c.bytes_sent
+        for iface, c in counters.items()
+        if iface in interfaces
+    )
 
 def get_upload_bitrate(interval=1.0):
     """Returns actual upload bitrate in Mbps."""
     try:
-        counters1 = psutil.net_io_counters()
-        bytes_sent1 = counters1.bytes_sent
+        active_interfaces = get_active_interfaces()
+        bytes_sent1 = get_current_bytes_sent(active_interfaces)
         time.sleep(interval)
-        counters2 = psutil.net_io_counters()
-        bytes_sent2 = counters2.bytes_sent
+        bytes_sent2 = get_current_bytes_sent(active_interfaces)
         # Convert bytes/sec → bits/sec → Mbps
         return (bytes_sent2 - bytes_sent1) * 8 / interval / 1_000_000
     except Exception as e:
         print(f"Failed to get upload bitrate: {e}")
         return 0
-
 
 def _install_ookla_speedtest_noninteractive():
     """Attempts to install Ookla speedtest non-interactively. Returns True if installed."""
