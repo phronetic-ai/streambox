@@ -18,7 +18,7 @@ class StreamHandler:
         self.start_timestamp: float | None = None
         self.valid_source_urls: list[str] = []
         self.rtsp_status = {}
-        self.ffmpeg_error = None
+        self.ffmpeg_error = "init"
 
     def update(self, stream_details: dict):
         changed = True
@@ -45,7 +45,7 @@ class StreamHandler:
                 error += f"RTSP URL {status['url']} is invalid: {status['output']}\n"
         if self.ffmpeg_error:
             error += f"FFmpeg error: {self.ffmpeg_error}\n"
-            self.ffmpeg_error = None
+            self.ffmpeg_error = "init"
         if len(self.valid_source_urls) == 0:
             error += "No valid source URLs"
         return error.strip() if error else None
@@ -89,7 +89,7 @@ class StreamHandler:
                 stderr_output = self.ffmpeg_process.stderr.read() if self.ffmpeg_process.stderr else None
                 self.ffmpeg_error = stderr_output if stderr_output else "ffmpeg command failed"
                 return False
-        if self.start_timestamp and time.time() - self.start_timestamp > 60:
+        if self.start_timestamp and time.time() - self.start_timestamp > 150:
             if (
                 not self.last_frame_timestamp
                 or time.time() - self.last_frame_timestamp > 10
