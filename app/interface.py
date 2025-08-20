@@ -38,4 +38,7 @@ def get_stream_status(gateway: "GatewayService") -> dict:
         "dead_streams": [
             stream.id for stream in gateway.stream_handlers if not stream.is_alive()
         ],
+        "rtsp_status": [
+            handler.rtsp_status for handler in gateway.stream_handlers
+        ]
     }
