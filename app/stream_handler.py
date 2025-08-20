@@ -16,6 +16,7 @@ class StreamHandler:
         self.exit_code: int = 0
         self.last_frame_timestamp: float | None = stream_details["last_frame_timestamp"]
         self.start_timestamp: float | None = None
+        self.error = None
 
     def update(self, stream_details: dict):
         if (
@@ -61,8 +62,11 @@ class StreamHandler:
     def is_alive(self):
         if self.ffmpeg_process:
             if self.ffmpeg_process.poll() is not None:
+                # Process has terminated, capture error output
+                stderr_output = self.ffmpeg_process.stderr.read() if self.ffmpeg_process.stderr else None
+                self.error = stderr_output if stderr_output else "ffmpeg command failed"
                 return False
-        if self.start_timestamp and time.time() - self.start_timestamp > 150:
+        if self.start_timestamp and time.time() - self.start_timestamp > 60:
             if (
                 not self.last_frame_timestamp
                 or time.time() - self.last_frame_timestamp > 10

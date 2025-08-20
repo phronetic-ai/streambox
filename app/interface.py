@@ -12,10 +12,12 @@ async def get_stream_details(gateway: "GatewayService") -> dict[str, Any]:
     system_info = get_system_info()
     device_id = get_device_id()
     stream_status = get_stream_status(gateway)
+    logs = gateway.fetch_logs()
     payload = {
         "device_id": device_id,
         "system_info": system_info,
         "stream_status": stream_status,
+        "logs": logs,
     }
     async with httpx.AsyncClient() as client:
         headers = {"Content-Type": "application/json"}
