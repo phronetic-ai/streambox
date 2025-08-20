@@ -27,7 +27,7 @@ class GatewayService:
         self.last_monitor_timestamp: float = time.time()
 
     async def load_streams(self):
-        stream_details = await get_stream_details()
+        stream_details = await get_stream_details(self)
         streams = stream_details.get("streams", [])
         return [stream for stream in streams if stream["status"] == "active"]
 
