@@ -79,15 +79,20 @@ class StreamHandler:
             # For single URL, just relay the stream as is
             ffmpeg_cmd = [
                 "ffmpeg",
-                "-re",
-                "-thread_queue_size",
-                "512",
-                "-i",
-                source_urls[0],
-                "-c:v",
-                "copy",
-                "-f",
-                "rtsp",
+                "-rtsp_transport", "tcp",
+                "-fflags", "nobuffer",
+                "-flags", "low_delay",
+                "-thread_queue_size", "4096",
+                "-i", source_urls[0],
+                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2",
+                "-c:v", "libx264",
+                "-preset", "veryfast",
+                "-tune", "zerolatency",
+                "-b:v", "2M",
+                "-maxrate", "2M",
+                "-bufsize", "4M",
+                "-an",  # disable audio explicitly
+                "-f", "rtsp",
                 self.stream_url,
             ]
         else:
