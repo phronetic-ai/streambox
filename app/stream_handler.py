@@ -16,24 +16,47 @@ class StreamHandler:
         self.exit_code: int = 0
         self.last_frame_timestamp: float | None = stream_details["last_frame_timestamp"]
         self.start_timestamp: float | None = None
-        self.error = None
+        self.valid_source_urls: list[str] = []
+        self.rtsp_status = {}
+        self.ffmpeg_error = None
 
     def update(self, stream_details: dict):
+        changed = True
         if (
             self.stream_url == stream_details["stream_url"]
             and self.status == stream_details["status"]
             and self.source_urls == stream_details["source_urls"]
         ):
-            return
+            changed = False
 
         self.stream_url = stream_details["stream_url"]
         self.status = stream_details["status"]
         self.source_urls = stream_details["source_urls"]
         self.last_frame_timestamp = stream_details["last_frame_timestamp"]
-        self.restart()
+        existing_valid_source_urls = self.valid_source_urls
+        self.validate_source_urls()
+        if changed or self.valid_source_urls != existing_valid_source_urls:
+            self.restart()
+
+    def get_error(self):
+        error = ""
+        for _index, status in self.rtsp_status.items():
+            if not status["valid"]:
+                error += f"RTSP URL {status['url']} is invalid: {status['output']}\n"
+        if self.ffmpeg_error:
+            error += f"FFmpeg error: {self.ffmpeg_error}\n"
+            self.ffmpeg_error = None
+        if len(self.valid_source_urls) == 0:
+            error += "No valid source URLs"
+        return error.strip() if error else None
 
     def start(self):
         if self.gateway.stop_event.is_set():
+            return
+
+        self.validate_source_urls()
+
+        if len(self.valid_source_urls) == 0:
             return
 
         logger.info(f"Starting stream: {self.id}")
@@ -64,7 +87,7 @@ class StreamHandler:
             if self.ffmpeg_process.poll() is not None:
                 # Process has terminated, capture error output
                 stderr_output = self.ffmpeg_process.stderr.read() if self.ffmpeg_process.stderr else None
-                self.error = stderr_output if stderr_output else "ffmpeg command failed"
+                self.ffmpeg_error = stderr_output if stderr_output else "ffmpeg command failed"
                 return False
         if self.start_timestamp and time.time() - self.start_timestamp > 60:
             if (
@@ -74,9 +97,35 @@ class StreamHandler:
                 return False
         return True
 
+    def validate_source_urls(self):
+        rtsp_status = {}
+        for index, url in enumerate(self.source_urls):
+            valid, output = self.check_rtsp(url)
+            rtsp_status[index] = {"url": url, "valid": valid, "output": output}
+        self.rtsp_status = rtsp_status
+        self.valid_source_urls = [url["url"] for url in self.rtsp_status.values() if url["valid"]]
+
+    def check_rtsp(self, url):
+        try:
+            output = subprocess.check_output(
+                [
+                    "ffprobe",
+                    "-rtsp_transport", "tcp",
+                    "-v", "error",
+                    "-select_streams", "v:0",
+                    "-show_entries", "stream=codec_name",
+                    "-of", "default=nokey=1:noprint_wrappers=1",
+                    url
+                ],
+                stderr=subprocess.STDOUT
+            )
+            return True, output.decode().strip()
+        except subprocess.CalledProcessError as e:
+            return False, e.output.decode().strip()
+
     def build_ffmpeg_cmd(self):
         logger.info(f"Building ffmpeg command for stream: {self.id}")
-        source_urls = self.source_urls
+        source_urls = self.valid_source_urls
         url_count = len(source_urls)
 
         if url_count == 1:

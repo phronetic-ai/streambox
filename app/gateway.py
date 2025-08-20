@@ -26,7 +26,6 @@ class GatewayService:
         self.stop_event: asyncio.Event = stop_event
         self.last_monitor_timestamp: float = time.time()
         self.stream_fetch_timestamp: float = time.time()
-        self.logs = []
 
     async def load_streams(self):
         stream_details = await get_stream_details(self)
@@ -77,7 +76,6 @@ class GatewayService:
 
         for stream_handler in self.stream_handlers:
             if not stream_handler.is_alive():
-                self.add_log(stream_handler.id, stream_handler.error)
                 logger.warning(f"Stream {stream_handler.id} crashed. Restarting...")
                 stream_handler.restart()
 
@@ -92,19 +90,10 @@ class GatewayService:
         for stream_handler in self.stream_handlers:
             stream_handler.stop()
 
-    def add_log(self, stream_id: str, log: str):
-        existing_log = next(
-            (log for log in self.logs if log["stream_id"] == stream_id), None
-        )
-        if existing_log:
-            existing_log["log"] = log
-            existing_log["timestamp"] = time.time()
-        else:
-            self.logs.append({"timestamp": time.time(), "stream_id": stream_id, "log": log})
-        if len(self.logs) > 100:
-            self.logs.pop(0)
-
     def fetch_logs(self):
-        logs = self.logs
-        self.logs = []
+        logs = []
+        for stream_handler in self.stream_handlers:
+            error = stream_handler.get_error()
+            if error:
+                logs.append({"timestamp": time.time(), "stream_id": stream_handler.id, "log": error})
         return logs
