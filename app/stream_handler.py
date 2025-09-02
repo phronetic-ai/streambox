@@ -110,7 +110,7 @@ class StreamHandler:
             output = subprocess.check_output(
                 [
                     "ffprobe",
-                    "-rtsp_transport", "tcp",
+                    "-rtsp_transport", "udp",
                     "-v", "error",
                     "-select_streams", "v:0",
                     "-show_entries", "stream=codec_name",
@@ -132,7 +132,7 @@ class StreamHandler:
             # For single URL, just relay the stream as is
             ffmpeg_cmd = [
                 "ffmpeg",
-                "-rtsp_transport", "tcp",
+                "-rtsp_transport", "udp",
                 "-fflags", "nobuffer",
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
@@ -150,7 +150,7 @@ class StreamHandler:
             ]
         else:
             # For 2-4 URLs, create a 2x2 grid
-            ffmpeg_cmd = ["ffmpeg", "-re"]
+            ffmpeg_cmd = ["ffmpeg", "-re", "-rtsp_transport", "tcp"]
 
             # Add inputs for available URLs
             for i in range(min(url_count, 4)):
