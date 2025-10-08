@@ -21,6 +21,7 @@ class StreamHandler:
         self.ffmpeg_error = "init"
 
     def update(self, stream_details: dict):
+        logger.info(f"Updating stream details for stream: {stream_details['stream_id']}")
         changed = True
         if (
             self.stream_url == stream_details["stream_url"]
@@ -57,6 +58,7 @@ class StreamHandler:
         self.validate_source_urls()
 
         if len(self.valid_source_urls) == 0:
+            logger.info(f"No valid source urls - Returning...")
             return
 
         logger.info(f"Starting stream: {self.id}")
@@ -68,6 +70,7 @@ class StreamHandler:
             text=True,
         )
         self.start_timestamp = time.time()
+        logger.info(f"Stream handler started at: {self.start_timestamp}")
 
     def stop(self):
         if self.ffmpeg_process:
@@ -102,6 +105,7 @@ class StreamHandler:
         for index, url in enumerate(self.source_urls):
             valid, output = self.check_rtsp(url)
             rtsp_status[index] = {"url": url, "valid": valid, "output": output}
+            logger.info(f"Checking rtsp url: {url} - Results: valid -> {valid} | output -> {output}")
         self.rtsp_status = rtsp_status
         self.valid_source_urls = [url["url"] for url in self.rtsp_status.values() if url["valid"]]
 
@@ -110,7 +114,7 @@ class StreamHandler:
             output = subprocess.check_output(
                 [
                     "ffprobe",
-                    "-rtsp_transport", "udp",
+                    "-rtsp_transport", "tcp",
                     "-v", "error",
                     "-select_streams", "v:0",
                     "-show_entries", "stream=codec_name",
@@ -132,18 +136,19 @@ class StreamHandler:
             # For single URL, just relay the stream as is
             ffmpeg_cmd = [
                 "ffmpeg",
-                "-rtsp_transport", "udp",
+                "-rtsp_transport", "tcp",
                 "-fflags", "nobuffer",
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
                 "-i", source_urls[0],
                 "-vf", "scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2",
-                "-c:v", "libx264",
+                "-c:v", "libx265",
+                "-r", "2",
                 "-preset", "veryfast",
                 "-tune", "zerolatency",
-                "-b:v", "2M",
-                "-maxrate", "2M",
-                "-bufsize", "4M",
+                "-b:v", "500k",
+                "-maxrate", "600k",
+                "-bufsize", "1000k",
                 "-an",  # disable audio explicitly
                 "-f", "rtsp",
                 self.stream_url,
