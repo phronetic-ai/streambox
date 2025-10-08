@@ -128,7 +128,7 @@ class StreamHandler:
             return False, e.output.decode().strip()
 
     def build_ffmpeg_cmd(self):
-        logger.info(f"Building ffmpeg command for stream: {self.id}")
+        logger.info(f"Building ffmpeg command for stream: {self.id} and urls: {self.valid_source_urls}")
         source_urls = self.valid_source_urls
         url_count = len(source_urls)
 
@@ -189,11 +189,11 @@ class StreamHandler:
                     "-vsync",
                     "2",
                     "-b:v",
-                    "2M",
+                    "500k",
                     "-maxrate",
-                    "2M",
+                    "600k",
                     "-bufsize",
-                    "4M",
+                    "1000k",
                     "-vcodec",
                     "libx264",
                     "-tune",
