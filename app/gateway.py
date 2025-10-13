@@ -26,6 +26,8 @@ class GatewayService:
         self.stop_event: asyncio.Event = stop_event
         self.last_monitor_timestamp: float = time.time()
         self.stream_fetch_timestamp: float = time.time()
+        self._is_service_start: bool = True
+        self._stream_handlers_state_changed: bool = False
 
     async def load_streams(self):
         stream_details = await get_stream_details(self)
@@ -51,6 +53,7 @@ class GatewayService:
                 stream_handler = StreamHandler(self, stream)
                 self.stream_handlers.append(stream_handler)
                 stream_handler.start()
+                self._stream_handlers_state_changed = True
 
         active_stream_ids = [stream["stream_id"] for stream in streams]
         inactive_stream_ids = [
@@ -70,14 +73,19 @@ class GatewayService:
             self.stop_event.set()
             return
 
-        if self.stream_fetch_timestamp < time.time() - 60:
-            await self.update_stream_handlers()
-            self.stream_fetch_timestamp = time.time()
-
+        restarted = False
         for stream_handler in self.stream_handlers:
             if not stream_handler.is_alive():
                 logger.warning(f"Stream {stream_handler.id} crashed. Restarting...")
                 stream_handler.restart()
+                restarted = True
+
+        if restarted:
+            self._stream_handlers_state_changed = True
+
+        if self.stream_fetch_timestamp < time.time() - 60:
+            await self.update_stream_handlers()
+            self.stream_fetch_timestamp = time.time()
 
     async def start(self):
         logger.info(f"Starting gateway service for device {get_device_id()}")
@@ -97,3 +105,15 @@ class GatewayService:
             if error:
                 logs.append({"timestamp": time.time(), "stream_id": stream_handler.id, "log": error})
         return logs
+
+
+    def get_service_info(self):
+        """Returns service state info and process state flags as needed."""
+        service_info = {
+            "is_service_initialization": self._is_service_start,
+            "is_process_state_changed": self._stream_handlers_state_changed,
+        }
+        # Reset flags after reporting
+        self._is_service_start = False
+        self._stream_handlers_state_changed = False
+        return service_info

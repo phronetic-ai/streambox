@@ -102,6 +102,7 @@ class StreamHandler:
                 not self.last_frame_timestamp
                 or time.time() - self.last_frame_timestamp > 10
             ):
+                self.ffmpeg_error += " - Last Frame received 10 seconds ago. Marking process as Not Alive."
                 return False
         return True
 
