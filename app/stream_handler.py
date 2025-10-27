@@ -91,6 +91,11 @@ class StreamHandler:
                 # Process has terminated, capture error output
                 stderr_output = self.ffmpeg_process.stderr.read() if self.ffmpeg_process.stderr else None
                 self.ffmpeg_error = stderr_output if stderr_output else "ffmpeg command failed"
+
+                stdout_output = self.ffmpeg_process.stdout.read() if self.ffmpeg_process.stdout else ""
+                self.ffmpeg_error += f" | FFmpeg Output: {stdout_output}"
+                process_return_code = self.ffmpeg_process.returncode
+                self.ffmpeg_error += f" | Return Code: {process_return_code}"
                 return False
         if self.start_timestamp and time.time() - self.start_timestamp > 150:
             if (
