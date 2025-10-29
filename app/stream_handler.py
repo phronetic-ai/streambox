@@ -122,7 +122,7 @@ class StreamHandler:
                     "-rtsp_transport", "tcp",
                     "-v", "error",
                     "-select_streams", "v:0",
-                    "-show_entries", "stream=codec_name",
+                    "-show_entries", "stream=index,codec_name,codec_long_name,profile,pix_fmt,width,height,avg_frame_rate,r_frame_rate,bit_rate,level,color_range,color_space,color_transfer,color_primaries,nb_frames",
                     "-of", "default=nokey=1:noprint_wrappers=1",
                     url
                 ],
