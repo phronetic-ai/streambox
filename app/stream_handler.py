@@ -155,8 +155,7 @@ class StreamHandler:
                 "-maxrate", "600k",
                 "-bufsize", "1000k",
                 "-an",  # disable audio explicitly
-                "-f", "rtsp",
-                "-rtsp_transport", "tcp",
+                "-f", "flv",
                 self.stream_url,
             ]
         else:
