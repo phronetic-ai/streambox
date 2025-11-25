@@ -142,7 +142,7 @@ class StreamHandler:
             ffmpeg_cmd = [
                 "ffmpeg",
                 "-rtsp_transport", "tcp",
-                "-fflags", "nobuffer",
+                "-fflags", "+genpts",
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
                 "-i", source_urls[0],
