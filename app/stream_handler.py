@@ -143,7 +143,7 @@ class StreamHandler:
             ffmpeg_cmd = [
                 "ffmpeg",
                 "-rtsp_transport", "tcp",
-                "-fflags", "+genpts",
+                "-fflags", "genpts",
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
                 "-i", source_urls[0],
@@ -157,7 +157,6 @@ class StreamHandler:
                 "-bufsize", "1000k",
                 "-an",  # disable audio explicitly
                 "-f", "rtsp",
-                "-rtsp_transport", "tcp",
                 self.stream_url,
             ]
         else:
