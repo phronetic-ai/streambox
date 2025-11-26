@@ -97,14 +97,13 @@ class StreamHandler:
                 process_return_code = self.ffmpeg_process.returncode
                 self.ffmpeg_error += f" | Return Code: {process_return_code}"
                 return False
-        # Skip restart logic based on last_frame_timestamp - commented out
-        # if self.start_timestamp and time.time() - self.start_timestamp > 150:
-        #     if (
-        #         not self.last_frame_timestamp
-        #         or time.time() - self.last_frame_timestamp > 10
-        #     ):
-        #         self.ffmpeg_error += " - Last Frame received 10 seconds ago. Marking process as Not Alive."
-        #         return False
+        if self.start_timestamp and time.time() - self.start_timestamp > 150:
+            if (
+                not self.last_frame_timestamp
+                or time.time() - self.last_frame_timestamp > 10
+            ):
+                self.ffmpeg_error += " - Last Frame received 10 seconds ago. Marking process as Not Alive."
+                return False
         return True
 
     def validate_source_urls(self):
