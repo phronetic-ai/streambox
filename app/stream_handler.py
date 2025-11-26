@@ -146,7 +146,7 @@ class StreamHandler:
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
                 "-i", source_urls[0],
-                "-vf", "scale=1280:720:force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p",
+                "-vf", "scale=256:144:force_original_aspect_ratio=decrease:force_divisible_by=2,format=yuv420p",
                 "-c:v", "libx264",
                 "-r", "2",
                 "-preset", "veryfast",
