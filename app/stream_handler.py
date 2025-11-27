@@ -98,11 +98,19 @@ class StreamHandler:
                 self.ffmpeg_error += f" | Return Code: {process_return_code}"
                 return False
         if self.start_timestamp and time.time() - self.start_timestamp > 150:
+            current_time = time.time()
+            time_since_start = current_time - self.start_timestamp
             if (
                 not self.last_frame_timestamp
-                or time.time() - self.last_frame_timestamp > 10
+                or current_time - self.last_frame_timestamp > 10
             ):
-                self.ffmpeg_error += " - Last Frame received 10 seconds ago. Marking process as Not Alive."
+                error_msg = " - Last Frame received 10 seconds ago. Marking process as Not Alive."
+                if not self.last_frame_timestamp:
+                    error_msg += f" [last_frame_timestamp=None, start_timestamp={self.start_timestamp}, time_since_start={time_since_start:.2f}s, current_time={current_time}]"
+                else:
+                    time_since_last_frame = current_time - self.last_frame_timestamp
+                    error_msg += f" [last_frame_timestamp={self.last_frame_timestamp}, time_since_last_frame={time_since_last_frame:.2f}s, start_timestamp={self.start_timestamp}, time_since_start={time_since_start:.2f}s, current_time={current_time}]"
+                self.ffmpeg_error += error_msg
                 return False
         return True
 
