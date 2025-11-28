@@ -104,7 +104,7 @@ class StreamHandler:
                 not self.last_frame_timestamp
                 or current_time - self.last_frame_timestamp > 120
             ):
-                error_msg = " - Last Frame received 120 seconds ago. Marking process as Not Alive."
+                error_msg = f" - Stream {self.id}: Last Frame received 120 seconds ago. Marking process as Not Alive."
                 if not self.last_frame_timestamp:
                     error_msg += f" [last_frame_timestamp=None, start_timestamp={self.start_timestamp}, time_since_start={time_since_start:.2f}s, current_time={current_time}]"
                 else:
