@@ -102,7 +102,7 @@ class StreamHandler:
             time_since_start = current_time - self.start_timestamp
             if (
                 not self.last_frame_timestamp
-                or current_time - self.last_frame_timestamp > 120
+                or current_time - self.last_frame_timestamp > 300
             ):
                 error_msg = f" - Stream {self.id}: Last Frame received 120 seconds ago. Marking process as Not Alive."
                 if not self.last_frame_timestamp:
@@ -151,6 +151,7 @@ class StreamHandler:
             ffmpeg_cmd = [
                 "ffmpeg",
                 "-rtsp_transport", "tcp",
+                "-loglevel", "error",
                 "-fflags", "genpts",
                 "-flags", "low_delay",
                 "-thread_queue_size", "4096",
